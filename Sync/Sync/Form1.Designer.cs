@@ -132,7 +132,7 @@
             this.AddBtn.TabIndex = 2;
             this.AddBtn.Text = "Add file";
             this.AddBtn.UseVisualStyleBackColor = true;
-            this.AddBtn.Click += new System.EventHandler(this.ActionButton_Click);
+            this.AddBtn.Click += new System.EventHandler(this.AddBtn_Click);
             // 
             // DelBtn
             // 

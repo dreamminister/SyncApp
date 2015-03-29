@@ -15,6 +15,9 @@ namespace Sync
         private bool isFirstDirSet = false;
         private bool isSecondDirSet = false;
 
+        UserInputDialog dialog;
+        Form helperForm;
+
         public event Action<object, Dir> OpenDirDialog;
         public event Func<Operation, string, bool> OperationIsNeeded;
 
@@ -52,7 +55,8 @@ namespace Sync
         {
             if (number == Dir.First)
             {
-                firstDirNameLbl.Text = dirName;
+                if (!string.IsNullOrEmpty(dirName))
+                    firstDirNameLbl.Text = dirName;
                 FirstDirLB.Items.Clear();
                 FirstDirLB.Items.AddRange(files.ToArray());
                 isFirstDirSet = true;
@@ -62,7 +66,8 @@ namespace Sync
             }
             else 
             {
-                SecondDirNameLbl.Text = dirName;
+                if (!string.IsNullOrEmpty(dirName))
+                    SecondDirNameLbl.Text = dirName;
                 SecondDirLB.Items.Clear();
                 SecondDirLB.Items.AddRange(files.ToArray());
                 isSecondDirSet = true;
@@ -122,9 +127,9 @@ namespace Sync
                 }
                 else if (actionBtn.Name == AddBtn.Name) 
                 {
+                    // AddBtn_Click
                     operation = Operation.Add;
-
-                    // to do write code fore creating new file
+                    operationParameter = dialog.SelectedFileName;
                 }
                 else if (actionBtn.Name == DelBtn.Name) 
                 {
@@ -142,6 +147,28 @@ namespace Sync
 
                 OperationIsNeeded(operation, operationParameter);
             }
+        }
+
+        private void dialog_OnFileNameIsReady()
+        {
+            helperForm.Close();
+            ActionButton_Click(AddBtn, null);
+        }
+
+        private void AddBtn_Click(object sender, EventArgs e)
+        {
+            Size fix = new Size(400, 100);
+
+            dialog = new UserInputDialog();
+            dialog.OnFileNameIsReady += dialog_OnFileNameIsReady;
+            helperForm = new Form();            
+            helperForm.Size = fix;
+            helperForm.MaximumSize = fix;
+            helperForm.MinimumSize = fix;
+            helperForm.Text = "Sync: add file menu";
+            helperForm.Controls.Add(dialog);
+
+            helperForm.Show();
         }
     }
 }

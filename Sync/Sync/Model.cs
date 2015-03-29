@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace Sync
 {
+    // directories enum
     public enum Dir 
     {
         First,
@@ -15,19 +16,22 @@ namespace Sync
 
     class Model
     {
+        // all files map
         public Dictionary<Dir, List<string>> Files { get; set; }
+        // dir name to its system path map
         Dictionary<Dir, string> DirToPathMap = new Dictionary<Dir, string>();
-
-        public List<string> FirstDir 
+        // files from first dir
+        public List<string> FirstDirFiles 
         {
             get { return Files[Dir.First]; }
         }
-
-        public List<string> SecondDir
+        // files from second dir
+        public List<string> SecondDirFiles
         {
             get { return Files[Dir.Second]; }
         }
 
+        // constructor, just default values
         public Model() 
         {
             Files = new Dictionary<Dir, List<string>>()
@@ -37,8 +41,18 @@ namespace Sync
             };
         }
 
+        // refreshes content of model from folder paths, not from UI!
+        private void Refresh() 
+        {
+            if (DirToPathMap.ContainsKey(Dir.First))
+                AddFiles(DirToPathMap[Dir.First], Dir.First);
+            if (DirToPathMap.ContainsKey(Dir.Second))
+                AddFiles(DirToPathMap[Dir.Second], Dir.Second);
+        }
+
         internal void AddFiles(string path, Dir dirNumber)
         {
+            // adding files to model's folder
             string[] files = Directory.GetFiles(path);
             
             DirToPathMap[dirNumber] = path;
@@ -47,24 +61,137 @@ namespace Sync
             Files[dirNumber].AddRange(files.Select(file => Path.GetFileName(file)).ToArray());
         }
 
-        internal bool Add(string param)
+        /// <summary>
+        /// Add new file to both synced folders
+        /// </summary>
+        internal bool Add(string param, out string errorMessage)
         {
-            throw new NotImplementedException();
+            try
+            {
+                // check that files were not removed when sync was clicked
+                Refresh();
+
+                if (DirToPathMap.ContainsKey(Dir.First))
+                    using (File.Create(Path.Combine(DirToPathMap[Dir.First], param))) { };
+                if (DirToPathMap.ContainsKey(Dir.Second))
+                    using (File.Create(Path.Combine(DirToPathMap[Dir.Second], param))) { };
+
+                errorMessage = "";
+                return true;
+            }
+            catch (Exception ex) 
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+            finally
+            {
+                Refresh();
+            }
         }
 
-        internal bool Remove(string param)
+        /// <summary>
+        /// Removes file from both folders.
+        /// </summary>
+        internal bool Remove(string param, out string errorMessage)
         {
-            throw new NotImplementedException();
+            // check that files were not removed when sync was clicked
+            Refresh();
+
+            try
+            {
+                foreach (var item in FirstDirFiles)
+                {
+                    if (item.Equals(param, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        File.Delete(Path.Combine(DirToPathMap[Dir.First], item));
+                    }
+                }
+
+                foreach (var item in SecondDirFiles)
+                {
+                    if (item.Equals(param, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        File.Delete(Path.Combine(DirToPathMap[Dir.Second], item));
+                    }
+                }
+
+                errorMessage = "";
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+            finally 
+            {
+                Refresh();
+            }
         }
 
-        internal bool Sync()
+        /// <summary>
+        /// Syncs conents from both folders.
+        /// </summary>
+        internal bool Sync(out string errorMessage)
         {
-            throw new NotImplementedException();
+            // check that files were not removed when sync was clicked
+            Refresh();
+
+            var filesForSecondFolder = FirstDirFiles.Except(SecondDirFiles).ToList();
+            var filesForFirstFolder = SecondDirFiles.Except(FirstDirFiles).ToList();
+
+            try 
+            {
+                if (filesForFirstFolder.Count == 0 && filesForSecondFolder.Count == 0)
+                {
+                    errorMessage = "Nothing to Sync...";
+                    return false;
+                }
+
+                foreach(var item in filesForSecondFolder)
+                {
+                    File.Copy(Path.Combine(DirToPathMap[Dir.First], item), Path.Combine(DirToPathMap[Dir.Second], item), false);
+                }
+
+                foreach (var item in filesForFirstFolder)
+                {
+                    File.Copy(Path.Combine(DirToPathMap[Dir.Second], item), Path.Combine(DirToPathMap[Dir.First], item), false);
+                }
+
+                errorMessage = "";
+                return true;
+            }
+            catch(Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+            finally
+            {
+                Refresh();
+            }
         }
 
-        internal bool Reset()
+        /// <summary>
+        /// Resets all contents in all model.
+        /// </summary>
+        internal bool Reset(out string errorMessage)
         {
-            throw new NotImplementedException();
+            try
+            {
+                DirToPathMap[Dir.First] = "";
+                DirToPathMap[Dir.Second] = "";
+                Files[Dir.First].Clear();
+                Files[Dir.Second].Clear();
+                errorMessage = "";
+                return true;
+            }
+            catch (Exception ex) 
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
         }
     }
 }

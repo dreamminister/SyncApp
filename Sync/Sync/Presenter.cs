@@ -30,28 +30,91 @@ namespace Sync
             view.OperationIsNeeded += view_RunOperation;
         }
 
+        /// <summary>
+        /// Process user action depending on clicked button
+        /// </summary>
         private bool view_RunOperation(Operation operation, string param)
         {
             switch (operation)
             {
                 case Operation.Add:
                     {
-                        return model.Add(param);
+                        string message = "";
+                        bool success = model.Add(param, out message);
+
+                        view.UpdateUI(model.FirstDirFiles, Dir.First, "");
+                        view.UpdateUI(model.SecondDirFiles, Dir.Second, "");
+
+                        if (success)
+                        {
+                            view.ChangeStatusStripText(string.Format("File {0} was added ...", param));
+                            return true;
+                        }
+                        else
+                        {
+                            view.ChangeStatusStripText(message);
+                            return false;
+                        }
                     }
 
                 case Operation.Delete:
                     {
-                        return model.Remove(param);
+                        string message = "";
+                        bool success = model.Remove(param, out message);
+
+                        view.UpdateUI(model.FirstDirFiles, Dir.First, "");
+                        view.UpdateUI(model.SecondDirFiles, Dir.Second, "");
+
+                        if (success)
+                        {
+                            view.ChangeStatusStripText(string.Format("File {0} was removed ...", param));
+                            return true;
+                        }
+                        else
+                        {
+                            view.ChangeStatusStripText(message);
+                            return false;
+                        }
                     }
 
                 case Operation.Sync:
                     {
-                        return model.Sync();
+                        string message = "";
+                        bool success = model.Sync(out message);
+
+                        view.UpdateUI(model.FirstDirFiles, Dir.First, "");
+                        view.UpdateUI(model.SecondDirFiles, Dir.Second, "");
+
+                        if (success)
+                        {
+                            view.ChangeStatusStripText("Sync was completed...");
+                            return true;
+                        }
+                        else 
+                        {
+                            view.ChangeStatusStripText(message);
+                            return false;
+                        }
                     }
 
                 case Operation.Reset:
                     {
-                        return model.Reset();
+                        string message = "";
+                        bool success = model.Reset(out message);
+
+                        view.UpdateUI(model.FirstDirFiles, Dir.First, " ");
+                        view.UpdateUI(model.SecondDirFiles, Dir.Second, " ");
+
+                        if (success)
+                        {
+                            view.ChangeStatusStripText("Reset was completed. Select new directories...");
+                            return true;
+                        }
+                        else 
+                        {
+                            view.ChangeStatusStripText(message);
+                            return false;
+                        }
                     }
 
                 case Operation.None:
@@ -70,9 +133,9 @@ namespace Sync
             }
 
             if (dirNumber == Dir.First)
-                view.UpdateUI(model.FirstDir, dirNumber, dirDialog.SelectedPath);
+                view.UpdateUI(model.FirstDirFiles, dirNumber, dirDialog.SelectedPath);
             else
-                view.UpdateUI(model.SecondDir, dirNumber, dirDialog.SelectedPath);
+                view.UpdateUI(model.SecondDirFiles, dirNumber, dirDialog.SelectedPath);
         }
     }
 }
